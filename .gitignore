@@ -1,0 +1,6 @@
+.env
+db/*.db
+minhabiblia-server
+minhabiblia.exe
+minhabiblia
+node_modules/

@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  biblia-app:
+    build: .
+    container_name: minhabiblia-web
+    restart: unless-stopped
+    ports:
+      # A porta 8080 do seu PC já está em uso, 
+      # então mapeamos a porta 8090 do seu PC para a porta 8080 do container.
+      - "8090:8080"
+    
+    # Se você quiser que o container utilize e atualize o mesmo banco
+    # de dados da sua pasta local (em vez de fazer uma cópia fixa), descomente as linhas abaixo:
+    # volumes:
+    #   - ./db:/app/db
