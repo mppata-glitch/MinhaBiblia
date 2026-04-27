@@ -1,6 +1,6 @@
 {
-  "name": "MinhaBiblia",
-  "short_name": "MinhaBiblia",
+  "name": "MinhaBíblia",
+  "short_name": "MinhaBíblia",
   "description": "Bíblia Sagrada Multi-versões (NVI, NVT, KJV) rápida e acessível offline.",
   "start_url": "/",
   "display": "standalone",

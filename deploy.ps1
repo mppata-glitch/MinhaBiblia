@@ -1,6 +1,6 @@
 # Script para automatizar o build, push e deploy em produção
 Write-Host "0. Compilando Tailwind CSS..."
-npx @tailwindcss/cli -i ./static/input.css -o ./static/output.css --minify
+pushd static; npx @tailwindcss/cli -i input.css -o output.css --minify; popd
 
 Write-Host "1. Realizando build da imagem Docker..."
 docker build -t marcospedro2/nvisagrada:latest .
