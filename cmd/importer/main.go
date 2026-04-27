@@ -22,10 +22,10 @@ type Book struct {
 func main() {
 	jsonURL := os.Getenv("BIBLE_JSON_URL")
 	if jsonURL == "" {
-		jsonURL = "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/pt_nvi.json"
+		jsonURL = "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json"
 	}
 
-	fmt.Printf("Baixando Bíblia NVI de %s...\n", jsonURL)
+	fmt.Printf("Downloading KJV Bible from %s...\n", jsonURL)
 	resp, err := http.Get(jsonURL)
 	if err != nil {
 		log.Fatalf("Erro ao baixar JSON: %v", err)
@@ -49,7 +49,11 @@ func main() {
 
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		dbPath = "../../db/biblia.db"
+		dbPath = "db/biblia.db" // Caminho relativo à raiz do projeto
+		if _, err := os.Stat("db"); os.IsNotExist(err) {
+			// Se a pasta db não existir no local atual, tenta subir dois níveis (caso rodando de cmd/importer)
+			dbPath = "../../db/biblia.db"
+		}
 	}
 
 	// Remove existing db if any

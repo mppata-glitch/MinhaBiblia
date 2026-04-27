@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bíblia NVI</title>
+    <title>MyBible - King James Version (KJV)</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#020617"> <!-- slate-950 -->
-    <meta name="description" content="Bíblia Sagrada Nova Versão Internacional">
+    <meta name="description" content="Holy Bible King James Version">
     
     <!-- Tailwind CSS (via CDN for simplicity, can be built later) -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -82,28 +82,28 @@
     <header class="sticky top-0 z-50 w-full backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-slate-200 dark:border-slate-800">
         <div class="container mx-auto px-4 h-16 flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 shrink-0">
-                <button onclick="app.toggleSidebar()" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Menu Lateral">
+                <button onclick="app.toggleSidebar()" class="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Sidebar Menu">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
                 </button>
                 <div class="flex items-center gap-2 cursor-pointer" onclick="app.showHome()">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600 dark:text-indigo-400 hidden sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-                    <span class="font-bold text-lg tracking-tight hidden sm:block">NVI Sagrada</span>
+                    <span class="font-bold text-lg tracking-tight hidden sm:block">MyBible</span>
                 </div>
             </div>
             
             <div class="flex items-center gap-1 sm:gap-2 flex-1 justify-end">
-                <!-- Barra de Pesquisa Fixa no Canto Direito -->
+                <!-- Search Bar -->
                 <div class="relative w-full max-w-[280px]">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     </div>
-                    <input type="text" id="search-input" placeholder="Buscar livro ou palavra..." class="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-400 dark:focus:border-indigo-500 rounded-full pl-9 pr-4 py-1.5 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-slate-800 dark:text-slate-200 placeholder-slate-400">
+                    <input type="text" id="search-input" placeholder="Search book or verse..." class="w-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-800 focus:border-indigo-400 dark:focus:border-indigo-500 rounded-full pl-9 pr-4 py-1.5 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all text-slate-800 dark:text-slate-200 placeholder-slate-400">
                 </div>
 
                 <div class="flex items-center shrink-0 border-l border-slate-200 dark:border-slate-700 pl-1 sm:pl-2 ml-1 sm:ml-2">
-                    <button onclick="app.changeFontSize(-1)" class="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-sm" title="Diminuir Fonte">A-</button>
-                    <button onclick="app.changeFontSize(1)" class="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-lg" title="Aumentar Fonte">A+</button>
-                    <button onclick="app.toggleTheme()" id="theme-toggle" class="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Mudar Tema">
+                    <button onclick="app.changeFontSize(-1)" class="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-sm" title="Decrease Font">A-</button>
+                    <button onclick="app.changeFontSize(1)" class="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-lg" title="Increase Font">A+</button>
+                    <button onclick="app.toggleTheme()" id="theme-toggle" class="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Toggle Theme">
                         <!-- Icon placeholder -->
                     </button>
                 </div>
@@ -123,14 +123,14 @@
     <footer class="w-full py-6 mt-auto text-center text-sm text-slate-500 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div class="container mx-auto px-4">
             <div class="mb-4">
-                <p class="text-slate-600 dark:text-slate-400 mb-2 italic">Gostou do projeto e quer ajudar com as despesas?</p>
+                <p class="text-slate-600 dark:text-slate-400 mb-2 italic">Did you like the project and want to help with expenses?</p>
                 <a href="https://nubank.com.br/cobrar/38y8q/69ef5c65-a3f0-49a6-86b6-02a2893ddff5" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-medium transition-colors shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                    Contribuir via PIX
+                    Support via PIX
                 </a>
             </div>
             <div class="pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                Todos os direitos reservados mpp.app.br | v0.95.00
+                All rights reserved mpp.app.br | v0.95.00
             </div>
         </div>
     </footer>
@@ -139,7 +139,7 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[50] hidden transition-opacity opacity-0" onclick="app.toggleSidebar()"></div>
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-[60] w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
         <div class="h-14 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
-            <span class="font-bold text-lg">Índice</span>
+            <span class="font-bold text-lg">Table of Contents</span>
             <button onclick="app.toggleSidebar()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>

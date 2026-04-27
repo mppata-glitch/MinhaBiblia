@@ -89,7 +89,7 @@ const app = {
             this.renderSidebar(); // Gera o menu lateral quando os livros carregam
         } catch (e) {
             console.error("Erro ao carregar livros", e);
-            document.getElementById('main-content').innerHTML = `<p class="text-red-500 text-center">Erro ao carregar os livros. Você está offline sem cache?</p>`;
+            document.getElementById('main-content').innerHTML = `<p class="text-red-500 text-center">Error loading books. Are you offline without cache?</p>`;
         }
     },
 
@@ -248,7 +248,7 @@ const app = {
                 if (container && isAppend) {
                     const endDiv = document.createElement('div');
                     endDiv.className = "text-center py-10 mt-10 border-t border-slate-200 dark:border-slate-800";
-                    endDiv.innerHTML = `<p class="text-slate-500 mb-4">Fim do livro de ${this.state.currentBook.name}.</p><button onclick="app.showHome()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">Voltar aos Livros</button>`;
+                    endDiv.innerHTML = `<p class="text-slate-500 mb-4">End of the book of ${this.state.currentBook.name}.</p><button onclick="app.showHome()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">Back to Books</button>`;
                     container.appendChild(endDiv);
                 }
                 return;
@@ -268,8 +268,8 @@ const app = {
             if (!isAppend) {
                 document.getElementById('main-content').innerHTML = `
                     <div class="text-center py-10">
-                        <p class="text-slate-500 mb-4">Capítulo não encontrado ou erro de conexão.</p>
-                        <button onclick="app.showHome()" class="text-indigo-600 underline">Voltar ao Início</button>
+                        <p class="text-slate-500 mb-4">Chapter not found or connection error.</p>
+                        <button onclick="app.showHome()" class="text-indigo-600 underline">Back to Home</button>
                     </div>
                 `;
             }
@@ -395,14 +395,14 @@ const app = {
             
             let html = `
                 <div class="max-w-3xl mx-auto">
-                    <h2 class="text-2xl font-bold mb-6">Resultados para "${query}"</h2>
+                    <h2 class="text-2xl font-bold mb-6">Results for "${query}"</h2>
             `;
 
             // Se encontrou livros, exibe eles primeiro!
             if (matchedBooks.length > 0) {
                 html += `
                     <div class="mb-8">
-                        <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">Livros Encontrados</h3>
+                        <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">Books Found</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 `;
                 matchedBooks.forEach(b => {
@@ -428,7 +428,7 @@ const app = {
                 html += `</div></div>`;
             }
 
-            html += `<h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">Versículos Encontrados (${results ? results.length : 0})</h3>`;
+            html += `<h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">Verses Found (${results ? results.length : 0})</h3>`;
             html += `<div class="space-y-4">`;
 
             if (results && results.length > 0) {
@@ -444,7 +444,7 @@ const app = {
                     `;
                 });
             } else {
-                html += `<p class="text-slate-500">Nenhum versículo encontrado com estas palavras.</p>`;
+                html += `<p class="text-slate-500">No verses found with these words.</p>`;
             }
 
             html += `</div></div>`;
@@ -452,7 +452,7 @@ const app = {
             
         } catch (e) {
             console.error(e);
-            main.innerHTML = `<p class="text-red-500 text-center mt-10">Erro ao realizar a busca.</p>`;
+            main.innerHTML = `<p class="text-red-500 text-center mt-10">Error performing search.</p>`;
         }
     }
 };
