@@ -43,6 +43,14 @@ Os dados bíblicos em formato JSON utilizados neste projeto foram gentilmente di
 - **Repositório**: [thiagobodruk/bible](https://github.com/thiagobodruk/bible)
 - **Autor**: Thiago Bodruk
 
+## ☕ Contribua com o Projeto
+
+Se este projeto foi útil para você e você gostaria de contribuir com as despesas de servidor e manutenção, sinta-se à vontade para ajudar com qualquer valor via PIX:
+
+- **Apoie aqui**: [Contribuir via PIX (Nubank)](https://nubank.com.br/cobrar/38y8q/69ef5c65-a3f0-49a6-86b6-02a2893ddff5)
+
+Toda ajuda é muito bem-vinda para manter a Palavra acessível a todos!
+
 ## 📄 Licença
 
 Este projeto é para fins de estudo e uso pessoal. Verifique os termos de licença dos dados bíblicos no repositório original.

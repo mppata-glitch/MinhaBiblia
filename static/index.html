@@ -122,7 +122,16 @@
     <!-- Rodapé -->
     <footer class="w-full py-6 mt-auto text-center text-sm text-slate-500 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div class="container mx-auto px-4">
-            Todos os direitos reservados mpp.app.br | v0.94.00
+            <div class="mb-4">
+                <p class="text-slate-600 dark:text-slate-400 mb-2 italic">Gostou do projeto e quer ajudar com as despesas?</p>
+                <a href="https://nubank.com.br/cobrar/38y8q/69ef5c65-a3f0-49a6-86b6-02a2893ddff5" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-medium transition-colors shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Contribuir via PIX
+                </a>
+            </div>
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                Todos os direitos reservados mpp.app.br | v0.95.00
+            </div>
         </div>
     </footer>
 
@@ -140,11 +149,11 @@
         </div>
     </aside>
 
-    <script src="/app.js?v=0.94.00"></script>
+    <script src="/app.js?v=0.95.00"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=0.94.00')
+                navigator.serviceWorker.register('/sw.js?v=0.95.00')
                     .then(reg => console.log('Service Worker registrado!', reg))
                     .catch(err => console.log('Falha no registro do Service Worker:', err));
             });
