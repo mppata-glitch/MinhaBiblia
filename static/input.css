@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-slate-950: #020617;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}

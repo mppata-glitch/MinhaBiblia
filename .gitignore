@@ -4,3 +4,6 @@ minhabiblia-server
 minhabiblia.exe
 minhabiblia
 node_modules/
+server.exe
+*.exe
+bin/

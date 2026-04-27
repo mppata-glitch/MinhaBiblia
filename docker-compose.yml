@@ -1,7 +1,6 @@
-version: '3.8'
-
 services:
   biblia-app:
+    image: marcospedro2/nvisagrada:latest
     build: .
     container_name: minhabiblia-web
     restart: unless-stopped
@@ -10,6 +9,9 @@ services:
       # então mapeamos a porta 8090 do seu PC para a porta 8080 do container.
       - "8090:8080"
     
+    env_file:
+      - .env
+
     # Se você quiser que o container utilize e atualize o mesmo banco
     # de dados da sua pasta local (em vez de fazer uma cópia fixa), descomente as linhas abaixo:
     # volumes:

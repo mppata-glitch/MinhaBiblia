@@ -11,7 +11,42 @@ const app = {
     async init() {
         this.updateThemeIcon();
         await this.loadBooks();
-        this.renderHome();
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const book = urlParams.get('book');
+        const chapter = urlParams.get('chapter');
+        const search = urlParams.get('search');
+
+        if (book && chapter) {
+            const b = this.state.books.find(x => x.abbrev === book);
+            if (b) {
+                this.loadBook(book, b.name, parseInt(chapter), false);
+            } else {
+                this.renderHome();
+            }
+        } else if (search) {
+            document.getElementById('search-input').value = search;
+            this.performSearch(search, false);
+        } else {
+            this.renderHome();
+        }
+
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            const b = params.get('book');
+            const c = params.get('chapter');
+            const s = params.get('search');
+            
+            if (b && c) {
+                const bookObj = this.state.books.find(x => x.abbrev === b);
+                if (bookObj) this.loadBook(b, bookObj.name, parseInt(c), false);
+            } else if (s) {
+                document.getElementById('search-input').value = s;
+                this.performSearch(s, false);
+            } else {
+                this.showHome(false);
+            }
+        });
     },
 
     toggleTheme() {
@@ -45,51 +80,140 @@ const app = {
         }
     },
 
-    toggleSearch() {
-        const bar = document.getElementById('search-bar');
-        bar.classList.toggle('hidden');
-        if (!bar.classList.contains('hidden')) {
-            document.getElementById('search-input').focus();
-        }
-    },
+    // toggleSearch removido pois a barra agora é fixa
 
     async loadBooks() {
         try {
             const res = await fetch('/api/books');
             this.state.books = await res.json();
+            this.renderSidebar(); // Gera o menu lateral quando os livros carregam
         } catch (e) {
             console.error("Erro ao carregar livros", e);
             document.getElementById('main-content').innerHTML = `<p class="text-red-500 text-center">Erro ao carregar os livros. Você está offline sem cache?</p>`;
         }
     },
 
-    showHome() {
+    toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        
+        if (sidebar.classList.contains('-translate-x-full')) {
+            // Abrir
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+            setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+        } else {
+            // Fechar
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300); // 300ms = duration-300 no CSS
+        }
+    },
+
+    toggleSidebarBook(abbrev) {
+        const content = document.getElementById(`sidebar-book-${abbrev}`);
+        const icon = document.getElementById(`sidebar-icon-${abbrev}`);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            content.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    },
+
+    renderSidebar() {
+        const container = document.getElementById('sidebar-content');
+        if (!container) return;
+        
+        let html = '';
+        
+        this.state.books.forEach(b => {
+            html += `
+                <div class="border-b border-slate-100 dark:border-slate-800/50 last:border-0">
+                    <button onclick="app.toggleSidebarBook('${b.abbrev}')" class="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors text-left">
+                        <span class="font-medium text-slate-700 dark:text-slate-300">${b.name}</span>
+                        <svg id="sidebar-icon-${b.abbrev}" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div id="sidebar-book-${b.abbrev}" class="hidden p-2 grid grid-cols-5 gap-1 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg mb-2">
+            `;
+            
+            // Loop de botões para cada capítulo do livro (1 a N)
+            const maxChapters = b.chapters || 1; // Usando a nova propriedade que vem da API
+            for (let i = 1; i <= maxChapters; i++) {
+                html += `
+                    <button onclick="app.toggleSidebar(); app.loadBook('${b.abbrev}', '${b.name}', ${i})" class="p-2 text-center text-sm rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/60 hover:text-indigo-700 dark:text-slate-300 dark:hover:text-indigo-300 transition-colors">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            html += `</div></div>`;
+        });
+        
+        container.innerHTML = html;
+    },
+
+    showHome(updateUrl = true) {
+        if (updateUrl) {
+            history.pushState(null, '', '/');
+        }
         this.disconnectObserver();
         this.renderHome();
-        document.getElementById('search-bar').classList.add('hidden');
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.value = '';
+    },
+
+    toggleHomeBook(abbrev) {
+        const content = document.getElementById(`home-chapters-${abbrev}`);
+        if (content) {
+            content.classList.toggle('hidden');
+        }
+    },
+
+    toggleSearchBook(abbrev) {
+        const content = document.getElementById(`search-chapters-${abbrev}`);
+        if (content) {
+            content.classList.toggle('hidden');
+        }
     },
 
     renderHome() {
         const main = document.getElementById('main-content');
-        
-        let html = `<h1 class="text-3xl font-bold mb-6 text-indigo-700 dark:text-indigo-400">Livros da Bíblia</h1>`;
-        html += `<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">`;
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
         
         this.state.books.forEach(b => {
             html += `
-                <button onclick="app.loadBook('${b.abbrev}', '${b.name}')" class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md hover:border-indigo-500 dark:hover:border-indigo-500 transition-all text-center flex flex-col justify-center items-center gap-2 group">
-                    <span class="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">${b.name}</span>
-                    <span class="text-xs text-slate-500 uppercase tracking-widest">${b.abbrev}</span>
-                </button>
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow transition-shadow">
+                    <div onclick="app.toggleHomeBook('${b.abbrev}')" class="p-4 cursor-pointer flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <div>
+                            <h3 class="font-bold text-slate-800 dark:text-slate-200 text-lg">${b.name}</h3>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                    <div id="home-chapters-${b.abbrev}" class="hidden p-4 grid grid-cols-5 sm:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
             `;
+            
+            const maxChapters = b.chapters || 1;
+            for (let i = 1; i <= maxChapters; i++) {
+                html += `
+                    <button onclick="app.loadBook('${b.abbrev}', '${b.name}', ${i})" class="py-2 text-center text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white transition-colors font-medium">
+                        ${i}
+                    </button>
+                `;
+            }
+            html += `</div></div>`;
         });
         
-        html += `</div>`;
+        html += '</div>';
         main.innerHTML = html;
         window.scrollTo(0,0);
     },
 
-    async loadBook(abbrev, name, startChapter = 1) {
+    async loadBook(abbrev, name, startChapter = 1, updateUrl = true) {
+        if (updateUrl) {
+            history.pushState(null, '', `?book=${abbrev}&chapter=${startChapter}`);
+        }
         this.state.currentBook = { abbrev, name };
         this.state.currentChapter = startChapter;
         this.disconnectObserver();
@@ -119,9 +243,7 @@ const app = {
                 // Provavelmente chegou ao fim do livro
                 this.disconnectObserver();
                 if (indicator) indicator.classList.add('hidden');
-                this.loadingNext = false;
                 
-                // Exibir um botão para voltar ao início se for o fim
                 const container = document.getElementById('reading-container');
                 if (container && isAppend) {
                     const endDiv = document.createElement('div');
@@ -135,9 +257,11 @@ const app = {
             const verses = await res.json();
             this.state.currentChapter = chapterNum;
             this.renderChapter(verses, isAppend);
-            
-            // Re-setup observer on the new trigger
-            this.setupInfiniteScroll();
+
+            // Atualiza a URL ao fazer scroll infinito para tracking do Analytics
+            if (isAppend) {
+                history.replaceState(null, '', `?book=${abbrev}&chapter=${chapterNum}`);
+            }
 
         } catch (e) {
             console.error(e);
@@ -152,6 +276,8 @@ const app = {
         } finally {
             if (indicator) indicator.classList.add('hidden');
             this.loadingNext = false;
+            // Configurar observer apenas após liberar o loading e renderizar o DOM
+            setTimeout(() => this.setupInfiniteScroll(), 50);
         }
     },
 
@@ -234,32 +360,42 @@ const app = {
 
         // Debounce de 400ms para não sobrecarregar
         this.searchTimeout = setTimeout(() => {
-            this.search();
+            this.performSearch(q);
         }, 400);
     },
 
-    async search() {
-        const q = document.getElementById('search-input').value;
-        if (!q) return;
+    normalizeString(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    },
+
+    async performSearch(query, updateUrl = true) {
+        if (!query) {
+            this.renderHome();
+            return;
+        }
+
+        if (updateUrl) {
+            history.pushState(null, '', `?search=${encodeURIComponent(query)}`);
+        }
 
         this.disconnectObserver();
         const main = document.getElementById('main-content');
         main.innerHTML = `<div class="flex justify-center h-40 items-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>`;
         
         try {
-            // Filtrar livros localmente primeiro
-            const qLower = q.toLowerCase().trim();
+            // Pesquisa local de livros ignorando acentos
+            const qNormalized = this.normalizeString(query);
             const matchedBooks = this.state.books.filter(b => 
-                b.name.toLowerCase().includes(qLower) || 
-                b.abbrev.toLowerCase().includes(qLower)
+                this.normalizeString(b.name).includes(qNormalized) || 
+                this.normalizeString(b.abbrev).includes(qNormalized)
             );
 
-            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
             const results = await res.json();
             
             let html = `
                 <div class="max-w-3xl mx-auto">
-                    <h2 class="text-2xl font-bold mb-6">Resultados para "${q}"</h2>
+                    <h2 class="text-2xl font-bold mb-6">Resultados para "${query}"</h2>
             `;
 
             // Se encontrou livros, exibe eles primeiro!
@@ -267,14 +403,27 @@ const app = {
                 html += `
                     <div class="mb-8">
                         <h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-200 dark:border-slate-800 pb-2">Livros Encontrados</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 `;
                 matchedBooks.forEach(b => {
                     html += `
-                        <button onclick="app.loadBook('${b.abbrev}', '${b.name}')" class="p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors text-center">
-                            <span class="font-semibold text-indigo-700 dark:text-indigo-400">${b.name}</span>
-                        </button>
+                        <div class="bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800/50 rounded-xl overflow-hidden shadow-sm">
+                            <div onclick="app.toggleSearchBook('${b.abbrev}')" class="p-3 cursor-pointer flex justify-between items-center bg-indigo-50/50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors">
+                                <span class="font-bold text-indigo-700 dark:text-indigo-400">${b.name}</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </div>
+                            <div id="search-chapters-${b.abbrev}" class="hidden p-3 grid grid-cols-5 sm:grid-cols-6 gap-2 border-t border-indigo-100 dark:border-indigo-800/50">
                     `;
+                    
+                    const maxChapters = b.chapters || 1;
+                    for (let i = 1; i <= maxChapters; i++) {
+                        html += `
+                            <button onclick="app.loadBook('${b.abbrev}', '${b.name}', ${i})" class="py-2 text-center text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white transition-colors font-medium">
+                                ${i}
+                            </button>
+                        `;
+                    }
+                    html += `</div></div>`;
                 });
                 html += `</div></div>`;
             }
@@ -284,7 +433,7 @@ const app = {
 
             if (results && results.length > 0) {
                 results.forEach(r => {
-                    const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
                     const highlightedText = r.text.replace(regex, '<mark class="bg-yellow-200 dark:bg-indigo-900 dark:text-white px-1 rounded">$1</mark>');
                     
                     html += `
@@ -313,7 +462,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('search-input').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
-            app.search();
+            e.preventDefault();
         }
     });
 

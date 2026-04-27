@@ -1,9 +1,10 @@
-const CACHE_NAME = 'biblia-nvi-v5';
+const CACHE_NAME = 'biblia-nvi-v17';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/app.js',
-    '/manifest.json'
+    '/manifest.json',
+    '/favicon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -16,35 +17,40 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
 self.addEventListener('fetch', (event) => {
-    // Para requisições da API de livros e capítulos, fazemos cache automático.
-    // Estratégia: Stale-while-revalidate (mostra o cache rápido, mas atualiza por trás)
-    if (event.request.url.includes('/api/')) {
-        event.respondWith(
-            caches.open(CACHE_NAME).then(async (cache) => {
-                const cachedResponse = await cache.match(event.request);
-                
-                const networkFetch = fetch(event.request).then((networkResponse) => {
-                    // Atualiza o cache com a resposta mais recente
-                    cache.put(event.request, networkResponse.clone());
-                    return networkResponse;
-                }).catch(() => {
-                    // Se falhar a rede, não fazemos nada pois vamos retornar o cachedResponse (modo offline)
-                });
-
-                return cachedResponse || networkFetch;
-            })
-        );
+    // Apenas requisições GET podem ser colocadas no cache (evita erros no POST do Analytics)
+    if (event.request.method !== 'GET') {
         return;
     }
 
-    // Para as rotas estáticas (HTML, JS), Cache First
+    // Stale-while-revalidate para TUDO: HTML, JS, e APIs.
+    // Assim o app abre super rápido (offline) mas sempre baixa a versão mais nova por trás.
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
+        caches.open(CACHE_NAME).then(async (cache) => {
+            const cachedResponse = await cache.match(event.request);
+            
+            const networkFetch = fetch(event.request).then((networkResponse) => {
+                // Atualiza o cache com a resposta mais recente
+                cache.put(event.request, networkResponse.clone());
+                return networkResponse;
+            }).catch(() => {
+                // Se falhar a rede, não fazemos nada pois vamos retornar o cachedResponse (modo offline)
+            });
+
+            return cachedResponse || networkFetch;
         })
     );
 });

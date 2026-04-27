@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	_ "modernc.org/sqlite"
 )
@@ -14,9 +16,10 @@ import (
 var db *sql.DB
 
 type Book struct {
-	ID     int    `json:"id"`
-	Abbrev string `json:"abbrev"`
-	Name   string `json:"name"`
+	ID       int    `json:"id"`
+	Abbrev   string `json:"abbrev"`
+	Name     string `json:"name"`
+	Chapters int    `json:"chapters"`
 }
 
 type Verse struct {
@@ -60,7 +63,28 @@ func main() {
 	}
 	
 	fs := http.FileServer(http.Dir(staticPath))
-	mux.Handle("/", fs)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" && r.URL.Path != "/index.html" {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		indexPath := filepath.Join(staticPath, "index.html")
+		t, err := template.ParseFiles(indexPath)
+		if err != nil {
+			fs.ServeHTTP(w, r)
+			return
+		}
+
+		data := struct {
+			AnalyticsID string
+		}{
+			AnalyticsID: os.Getenv("ANALYTICS_ID"),
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		t.Execute(w, data)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -75,7 +99,13 @@ func main() {
 }
 
 func getBooks(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, abbrev, name FROM books ORDER BY id")
+	rows, err := db.Query(`
+		SELECT b.id, b.abbrev, b.name, MAX(v.chapter) 
+		FROM books b 
+		JOIN verses v ON b.id = v.book_id 
+		GROUP BY b.id 
+		ORDER BY b.id
+	`)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -85,7 +115,7 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 	var books []Book
 	for rows.Next() {
 		var b Book
-		if err := rows.Scan(&b.ID, &b.Abbrev, &b.Name); err != nil {
+		if err := rows.Scan(&b.ID, &b.Abbrev, &b.Name, &b.Chapters); err != nil {
 			continue
 		}
 		books = append(books, b)

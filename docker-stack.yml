@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  biblia-app:
+    # A imagem que publicamos no Docker Hub
+    image: marcospedro2/nvisagrada:latest
+    networks:
+      - network_public
+    environment:
+      - ANALYTICS_ID=G-LCTY156292 # Substitua pela sua tag ou injete no deploy
+    deploy:
+      mode: replicated
+      replicas: 2 # Deploy de 2 instâncias (stack) para alta disponibilidade
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first # Cria o novo container antes de desligar o antigo (Zero Downtime)
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      
+      # NOTA: Como vi no seu histórico que você utiliza o Traefik no Swarm, 
+      # deixei as labels prontas abaixo. Basta descomentar e colocar o seu domínio!
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=network_public
+        - traefik.http.routers.minhabiblia.rule=Host(`biblia.mpp.app.br`)
+        - traefik.http.routers.minhabiblia.entrypoints=websecure
+        - traefik.http.routers.minhabiblia.priority=1
+        - traefik.http.routers.minhabiblia.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.minhabiblia.service=minhabiblia
+        - traefik.http.services.minhabiblia.loadbalancer.server.port=8080
+        - traefik.http.services.minhabiblia.loadbalancer.passHostHeader=1
+
+networks:
+  network_public:
+    external: true
