@@ -57,4 +57,4 @@ The Bible data in JSON format used in this project was provided by:
 This project is for study and personal use. Please check the license terms of the Bible data in the original repository.
 
 ---
-Developed by [mpp.app.br](https://mpp.app.br)
+Developed by [Chat Gênios](https://www.chatgenios.com.br)

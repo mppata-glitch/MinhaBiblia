@@ -52,13 +52,13 @@ func main() {
 	mux.HandleFunc("GET /api/books", getBooks)
 	mux.HandleFunc("GET /api/books/{abbrev}/{chapter}", getChapter)
 	mux.HandleFunc("GET /api/search", searchVerses)
+	mux.HandleFunc("GET /api/versions", getVersions)
 
-	// Opcional: Permitir sobrescrever a pasta estática via variável
 	staticPath := os.Getenv("STATIC_PATH")
 	if staticPath == "" {
 		staticPath = "../../static"
 		if _, err := os.Stat(staticPath); os.IsNotExist(err) {
-			staticPath = "static" // Tenta caminho local se rodar da raiz
+			staticPath = "static"
 		}
 	}
 	
@@ -98,14 +98,51 @@ func main() {
 	log.Fatal(http.ListenAndServe(port, mux))
 }
 
+func getVersionID(r *http.Request) int {
+	vName := r.URL.Query().Get("v")
+	if vName == "" {
+		// Pega a primeira versão se não especificada
+		var id int
+		_ = db.QueryRow(`SELECT id FROM "Version" LIMIT 1`).Scan(&id)
+		return id
+	}
+	var id int
+	_ = db.QueryRow(`SELECT id FROM "Version" WHERE name = ?`, vName).Scan(&id)
+	return id
+}
+
+func getVersions(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query(`SELECT id, name, language FROM "Version"`)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type Version struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		Lang string `json:"language"`
+	}
+	var versions []Version
+	for rows.Next() {
+		var v Version
+		if err := rows.Scan(&v.ID, &v.Name, &v.Lang); err == nil {
+			versions = append(versions, v)
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(versions)
+}
+
 func getBooks(w http.ResponseWriter, r *http.Request) {
+	versionID := getVersionID(r)
 	rows, err := db.Query(`
-		SELECT b.id, b.abbrev, b.name, MAX(v.chapter) 
-		FROM books b 
-		JOIN verses v ON b.id = v.book_id 
-		GROUP BY b.id 
-		ORDER BY b.id
-	`)
+		SELECT id, abbrev, name, chapters 
+		FROM "Book" 
+		WHERE versionId = ? 
+		ORDER BY id
+	`, versionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -126,16 +163,17 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 }
 
 func getChapter(w http.ResponseWriter, r *http.Request) {
+	versionID := getVersionID(r)
 	abbrev := r.PathValue("abbrev")
 	chapter := r.PathValue("chapter")
 
 	rows, err := db.Query(`
-		SELECT v.id, v.book_id, v.chapter, v.verse, v.text 
-		FROM verses v
-		JOIN books b ON b.id = v.book_id
-		WHERE b.abbrev = ? AND v.chapter = ?
+		SELECT v.id, v.bookId, v.chapter, v.verse, v.text 
+		FROM "Verse" v
+		JOIN "Book" b ON b.id = v.bookId
+		WHERE b.abbrev = ? AND v.chapter = ? AND b.versionId = ?
 		ORDER BY v.verse
-	`, abbrev, chapter)
+	`, abbrev, chapter, versionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -161,20 +199,22 @@ func getChapter(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchVerses(w http.ResponseWriter, r *http.Request) {
+	versionID := getVersionID(r)
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		http.Error(w, "Parâmetro 'q' obrigatório", http.StatusBadRequest)
+		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
 		return
 	}
 
 	rows, err := db.Query(`
-		SELECT v.id, v.book_id, v.chapter, v.verse, v.text 
-		FROM verses_fts f
-		JOIN verses v ON f.rowid = v.id
-		WHERE verses_fts MATCH ?
+		SELECT v.id, v.bookId, v.chapter, v.verse, v.text 
+		FROM "Verse_fts" f
+		JOIN "Verse" v ON f.rowid = v.id
+		JOIN "Book" b ON b.id = v.bookId
+		WHERE "Verse_fts" MATCH ? AND b.versionId = ?
 		ORDER BY rank
 		LIMIT 50
-	`, query)
+	`, query, versionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -193,7 +233,7 @@ func searchVerses(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(&sr.ID, &sr.BookID, &sr.Chapter, &sr.Verse, &sr.Text); err != nil {
 			continue
 		}
-		_ = db.QueryRow("SELECT name, abbrev FROM books WHERE id = ?", sr.BookID).Scan(&sr.BookName, &sr.BookAbbrev)
+		_ = db.QueryRow(`SELECT name, abbrev FROM "Book" WHERE id = ?`, sr.BookID).Scan(&sr.BookName, &sr.BookAbbrev)
 		results = append(results, sr)
 	}
 

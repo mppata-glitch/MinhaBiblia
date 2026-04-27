@@ -1,6 +1,8 @@
 const app = {
     state: {
         books: [],
+        versions: [],
+        currentVersion: localStorage.bibleVersion || 'KJV',
         currentBook: null,
         currentChapter: 1,
     },
@@ -10,6 +12,7 @@ const app = {
 
     async init() {
         this.updateThemeIcon();
+        await this.loadVersions();
         await this.loadBooks();
         
         const urlParams = new URLSearchParams(window.location.search);
@@ -33,10 +36,17 @@ const app = {
 
         window.addEventListener('popstate', () => {
             const params = new URLSearchParams(window.location.search);
+            const v = params.get('v');
             const b = params.get('book');
             const c = params.get('chapter');
             const s = params.get('search');
             
+            if (v && v !== this.state.currentVersion) {
+                this.state.currentVersion = v;
+                document.getElementById('version-selector').value = v;
+                this.loadBooks();
+            }
+
             if (b && c) {
                 const bookObj = this.state.books.find(x => x.abbrev === b);
                 if (bookObj) this.loadBook(b, bookObj.name, parseInt(c), false);
@@ -80,11 +90,31 @@ const app = {
         }
     },
 
+    async loadVersions() {
+        try {
+            const res = await fetch('/api/versions');
+            this.state.versions = await res.json();
+            const selector = document.getElementById('version-selector');
+            selector.innerHTML = this.state.versions.map(v => 
+                `<option value="${v.name}" ${v.name === this.state.currentVersion ? 'selected' : ''}>${v.name}</option>`
+            ).join('');
+        } catch (e) {
+            console.error("Error loading versions", e);
+        }
+    },
+
+    changeVersion(v) {
+        this.state.currentVersion = v;
+        localStorage.bibleVersion = v;
+        this.loadBooks();
+        this.showHome();
+    },
+
     // toggleSearch removido pois a barra agora é fixa
 
     async loadBooks() {
         try {
-            const res = await fetch('/api/books');
+            const res = await fetch(`/api/books?v=${this.state.currentVersion}`);
             this.state.books = await res.json();
             this.renderSidebar(); // Gera o menu lateral quando os livros carregam
         } catch (e) {
@@ -156,7 +186,7 @@ const app = {
 
     showHome(updateUrl = true) {
         if (updateUrl) {
-            history.pushState(null, '', '/');
+            history.pushState(null, '', `/?v=${this.state.currentVersion}`);
         }
         this.disconnectObserver();
         this.renderHome();
@@ -212,7 +242,7 @@ const app = {
 
     async loadBook(abbrev, name, startChapter = 1, updateUrl = true) {
         if (updateUrl) {
-            history.pushState(null, '', `?book=${abbrev}&chapter=${startChapter}`);
+            history.pushState(null, '', `?v=${this.state.currentVersion}&book=${abbrev}&chapter=${startChapter}`);
         }
         this.state.currentBook = { abbrev, name };
         this.state.currentChapter = startChapter;
@@ -238,7 +268,7 @@ const app = {
         if (indicator) indicator.classList.remove('hidden');
 
         try {
-            const res = await fetch(`/api/books/${abbrev}/${chapterNum}`);
+            const res = await fetch(`/api/books/${abbrev}/${chapterNum}?v=${this.state.currentVersion}`);
             if (!res.ok) {
                 // Provavelmente chegou ao fim do livro
                 this.disconnectObserver();
@@ -260,7 +290,7 @@ const app = {
 
             // Atualiza a URL ao fazer scroll infinito para tracking do Analytics
             if (isAppend) {
-                history.replaceState(null, '', `?book=${abbrev}&chapter=${chapterNum}`);
+                history.replaceState(null, '', `?v=${this.state.currentVersion}&book=${abbrev}&chapter=${chapterNum}`);
             }
 
         } catch (e) {
@@ -375,7 +405,7 @@ const app = {
         }
 
         if (updateUrl) {
-            history.pushState(null, '', `?search=${encodeURIComponent(query)}`);
+            history.pushState(null, '', `?v=${this.state.currentVersion}&search=${encodeURIComponent(query)}`);
         }
 
         this.disconnectObserver();
@@ -390,7 +420,7 @@ const app = {
                 this.normalizeString(b.abbrev).includes(qNormalized)
             );
 
-            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`/api/search?v=${this.state.currentVersion}&q=${encodeURIComponent(query)}`);
             const results = await res.json();
             
             let html = `

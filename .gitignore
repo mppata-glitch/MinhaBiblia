@@ -7,3 +7,5 @@ node_modules/
 server.exe
 *.exe
 bin/
+
+/generated/prisma

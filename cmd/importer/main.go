@@ -21,20 +21,29 @@ type Book struct {
 
 func main() {
 	jsonURL := os.Getenv("BIBLE_JSON_URL")
+	versionName := os.Getenv("BIBLE_VERSION")
+	versionLang := os.Getenv("BIBLE_LANG")
+
 	if jsonURL == "" {
 		jsonURL = "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json"
 	}
+	if versionName == "" {
+		versionName = "KJV"
+	}
+	if versionLang == "" {
+		versionLang = "en"
+	}
 
-	fmt.Printf("Downloading KJV Bible from %s...\n", jsonURL)
+	fmt.Printf("Downloading %s Bible from %s...\n", versionName, jsonURL)
 	resp, err := http.Get(jsonURL)
 	if err != nil {
-		log.Fatalf("Erro ao baixar JSON: %v", err)
+		log.Fatalf("Error downloading JSON: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Erro ao ler resposta: %v", err)
+		log.Fatalf("Error reading response: %v", err)
 	}
 
 	body = bytes.TrimPrefix(body, []byte("\xef\xbb\xbf")) // Remove UTF-8 BOM if present
@@ -42,70 +51,52 @@ func main() {
 	var books []Book
 	err = json.Unmarshal(body, &books)
 	if err != nil {
-		log.Fatalf("Erro ao fazer parse do JSON: %v", err)
+		log.Fatalf("Error parsing JSON: %v", err)
 	}
 
-	fmt.Printf("Encontrados %d livros. Criando banco de dados...\n", len(books))
+	fmt.Printf("Found %d books. Connecting to database...\n", len(books))
 
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		dbPath = "db/biblia.db" // Caminho relativo à raiz do projeto
+		dbPath = "db/biblia.db"
 		if _, err := os.Stat("db"); os.IsNotExist(err) {
-			// Se a pasta db não existir no local atual, tenta subir dois níveis (caso rodando de cmd/importer)
 			dbPath = "../../db/biblia.db"
 		}
 	}
 
-	// Remove existing db if any
-	os.Remove(dbPath)
-
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		log.Fatalf("Erro ao abrir banco: %v", err)
+		log.Fatalf("Error opening db: %v", err)
 	}
 	defer db.Close()
 
-	queries := []string{
-		`CREATE TABLE books (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			abbrev TEXT UNIQUE,
-			name TEXT
-		);`,
-		`CREATE TABLE verses (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			book_id INTEGER,
-			chapter INTEGER,
-			verse INTEGER,
-			text TEXT,
-			FOREIGN KEY(book_id) REFERENCES books(id)
-		);`,
-		`CREATE VIRTUAL TABLE verses_fts USING fts5(text, content='verses', content_rowid='id');`,
-		`CREATE TRIGGER verses_ai AFTER INSERT ON verses BEGIN
-			INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
-		END;`,
-	}
-
-	for _, q := range queries {
-		_, err := db.Exec(q)
+	// Inserir Versão (ignora se já existir)
+	var versionId int64
+	err = db.QueryRow(`SELECT id FROM "Version" WHERE name = ?`, versionName).Scan(&versionId)
+	if err == sql.ErrNoRows {
+		res, err := db.Exec(`INSERT INTO "Version" (name, language) VALUES (?, ?)`, versionName, versionLang)
 		if err != nil {
-			log.Fatalf("Erro ao criar tabela: %v", err)
+			log.Fatalf("Error inserting Version: %v", err)
 		}
+		versionId, _ = res.LastInsertId()
+	} else if err != nil {
+		log.Fatalf("Error checking Version: %v", err)
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		log.Fatalf("Erro ao iniciar transação: %v", err)
+		log.Fatalf("Error starting transaction: %v", err)
 	}
 
-	fmt.Println("Inserindo dados no SQLite...")
+	fmt.Printf("Importing data for version %s (ID: %d)...\n", versionName, versionId)
 
-	bookStmt, err := tx.Prepare("INSERT INTO books (abbrev, name) VALUES (?, ?)")
+	bookStmt, err := tx.Prepare(`INSERT OR REPLACE INTO "Book" (abbrev, name, chapters, versionId) VALUES (?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer bookStmt.Close()
 
-	verseStmt, err := tx.Prepare("INSERT INTO verses (book_id, chapter, verse, text) VALUES (?, ?, ?, ?)")
+	verseStmt, err := tx.Prepare(`INSERT INTO "Verse" (bookId, chapter, verse, text) VALUES (?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,12 +105,12 @@ func main() {
 	for bookIndex, book := range books {
 		name := book.Name
 		if name == "" {
-			name = book.Abbrev 
+			name = book.Abbrev
 		}
 
-		res, err := bookStmt.Exec(book.Abbrev, name)
+		res, err := bookStmt.Exec(book.Abbrev, name, len(book.Chapters), versionId)
 		if err != nil {
-			log.Fatalf("Erro ao inserir livro %s: %v", book.Abbrev, err)
+			log.Fatalf("Error inserting book %s: %v", book.Abbrev, err)
 		}
 
 		bookID, _ := res.LastInsertId()
@@ -128,17 +119,17 @@ func main() {
 			for verseIndex, text := range chapter {
 				_, err := verseStmt.Exec(bookID, chapterIndex+1, verseIndex+1, text)
 				if err != nil {
-					log.Fatalf("Erro ao inserir versículo: %v", err)
+					log.Fatalf("Error inserting verse: %v", err)
 				}
 			}
 		}
-		fmt.Printf("Livro %d/%d importado: %s\n", bookIndex+1, len(books), name)
+		fmt.Printf("Book %d/%d imported: %s\n", bookIndex+1, len(books), name)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		log.Fatalf("Erro ao commitar transação: %v", err)
+		log.Fatalf("Error committing transaction: %v", err)
 	}
 
-	fmt.Printf("\n✅ Banco de dados criado com sucesso em %s!\n", dbPath)
+	fmt.Printf("\n✅ Data imported successfully into %s using Prisma schema!\n", dbPath)
 }
