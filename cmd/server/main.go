@@ -17,6 +17,7 @@ var db *sql.DB
 
 type Book struct {
 	ID       int    `json:"id"`
+	Number   int    `json:"number"`
 	Abbrev   string `json:"abbrev"`
 	Name     string `json:"name"`
 	Chapters int    `json:"chapters"`
@@ -138,7 +139,7 @@ func getVersions(w http.ResponseWriter, r *http.Request) {
 func getBooks(w http.ResponseWriter, r *http.Request) {
 	versionID := getVersionID(r)
 	rows, err := db.Query(`
-		SELECT id, abbrev, name, chapters 
+		SELECT id, number, abbrev, name, chapters 
 		FROM "Book" 
 		WHERE versionId = ? 
 		ORDER BY id
@@ -152,7 +153,7 @@ func getBooks(w http.ResponseWriter, r *http.Request) {
 	var books []Book
 	for rows.Next() {
 		var b Book
-		if err := rows.Scan(&b.ID, &b.Abbrev, &b.Name, &b.Chapters); err != nil {
+		if err := rows.Scan(&b.ID, &b.Number, &b.Abbrev, &b.Name, &b.Chapters); err != nil {
 			continue
 		}
 		books = append(books, b)

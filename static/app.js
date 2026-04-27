@@ -91,23 +91,66 @@ const app = {
     },
 
     async loadVersions() {
+        const flagMap = {
+            'pt-br': '🇧🇷',
+            'en-us': '🇺🇸',
+            'pt': '🇧🇷',
+            'en': '🇺🇸'
+        };
         try {
             const res = await fetch('/api/versions');
             this.state.versions = await res.json();
+            
+            // Se não houver versão no localStorage, tenta pegar a primeira em português ou a primeira disponível
+            if (!localStorage.bibleVersion) {
+                const ptVersion = this.state.versions.find(v => v.language.toLowerCase().startsWith('pt'));
+                if (ptVersion) {
+                    this.state.currentVersion = ptVersion.name;
+                    localStorage.bibleVersion = ptVersion.name;
+                } else if (this.state.versions.length > 0) {
+                    this.state.currentVersion = this.state.versions[0].name;
+                }
+            }
+
             const selector = document.getElementById('version-selector');
-            selector.innerHTML = this.state.versions.map(v => 
-                `<option value="${v.name}" ${v.name === this.state.currentVersion ? 'selected' : ''}>${v.name}</option>`
-            ).join('');
+            selector.innerHTML = this.state.versions.map(v => {
+                const flag = flagMap[v.language.toLowerCase()] || '🌐';
+                return `<option value="${v.name}" ${v.name === this.state.currentVersion ? 'selected' : ''}>${flag} ${v.name}</option>`;
+            }).join('');
         } catch (e) {
             console.error("Error loading versions", e);
         }
     },
 
-    changeVersion(v) {
+    async changeVersion(v) {
+        const main = document.getElementById('main-content');
+        
+        // Inicia o fade out
+        main.classList.add('opacity-0');
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        const oldBook = this.state.currentBook;
         this.state.currentVersion = v;
         localStorage.bibleVersion = v;
-        this.loadBooks();
-        this.showHome();
+        
+        await this.loadVersions();
+        await this.loadBooks();
+        
+        if (oldBook) {
+            // Tenta encontrar o livro pelo número sequencial na nova versão
+            const newBook = this.state.books.find(b => b.number === oldBook.number);
+            if (newBook) {
+                await this.loadBook(newBook.abbrev, newBook.name, this.state.currentChapter, true);
+            } else {
+                this.showHome();
+            }
+        } else {
+            this.showHome();
+        }
+
+        // Fade in
+        main.classList.remove('opacity-0');
     },
 
     // toggleSearch removido pois a barra agora é fixa
@@ -189,6 +232,7 @@ const app = {
             history.pushState(null, '', `/?v=${this.state.currentVersion}`);
         }
         this.disconnectObserver();
+        this.state.currentBook = null; // Limpa o livro atual ao voltar para home
         this.renderHome();
         const searchInput = document.getElementById('search-input');
         if (searchInput) searchInput.value = '';
@@ -244,7 +288,9 @@ const app = {
         if (updateUrl) {
             history.pushState(null, '', `?v=${this.state.currentVersion}&book=${abbrev}&chapter=${startChapter}`);
         }
-        this.state.currentBook = { abbrev, name };
+        
+        const bookObj = this.state.books.find(x => x.abbrev === abbrev);
+        this.state.currentBook = bookObj || { abbrev, name };
         this.state.currentChapter = startChapter;
         this.disconnectObserver();
         

@@ -90,7 +90,7 @@ func main() {
 
 	fmt.Printf("Importing data for version %s (ID: %d)...\n", versionName, versionId)
 
-	bookStmt, err := tx.Prepare(`INSERT OR REPLACE INTO "Book" (abbrev, name, chapters, versionId) VALUES (?, ?, ?, ?)`)
+	bookStmt, err := tx.Prepare(`INSERT OR REPLACE INTO "Book" (number, abbrev, name, chapters, versionId) VALUES (?, ?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func main() {
 			name = book.Abbrev
 		}
 
-		res, err := bookStmt.Exec(book.Abbrev, name, len(book.Chapters), versionId)
+		res, err := bookStmt.Exec(bookIndex+1, book.Abbrev, name, len(book.Chapters), versionId)
 		if err != nil {
 			log.Fatalf("Error inserting book %s: %v", book.Abbrev, err)
 		}

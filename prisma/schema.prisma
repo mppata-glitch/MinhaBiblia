@@ -18,6 +18,7 @@ model Version {
 
 model Book {
   id        Int      @id @default(autoincrement())
+  number    Int      @default(0)
   abbrev    String
   name      String
   chapters  Int      @default(1)
