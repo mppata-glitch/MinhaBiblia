@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MyBible - King James Version (KJV)</title>
+    <title>MinhaBiblia - Sua Bíblia Offline</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#020617"> <!-- slate-950 -->
-    <meta name="description" content="Holy Bible King James Version">
+    <meta name="description" content="Bíblia Sagrada Multi-versões (NVI, NVT, KJV) offline e rápida.">
     
     <!-- Tailwind CSS (via CDN for simplicity, can be built later) -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/favicon.svg">
-    <link rel="stylesheet" href="/output.css?v=0.94.00">
+    <link rel="stylesheet" href="/output.css?v=1.1.0">
 
     <style>
         :root {
@@ -139,7 +139,7 @@
                 </a>
             </div>
             <div class="pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                All rights reserved mpp.app.br | v0.95.00
+                All rights reserved mpp.app.br | v1.0.0
             </div>
         </div>
     </footer>
@@ -158,11 +158,11 @@
         </div>
     </aside>
 
-    <script src="/app.js?v=0.95.00"></script>
+    <script src="/app.js?v=1.0.0"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=0.95.00')
+                navigator.serviceWorker.register('/sw.js?v=1.0.0')
                     .then(reg => console.log('Service Worker registrado!', reg))
                     .catch(err => console.log('Falha no registro do Service Worker:', err));
             });

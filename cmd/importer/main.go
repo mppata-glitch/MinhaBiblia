@@ -13,16 +13,21 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-type Book struct {
+type BibleBook struct {
 	Abbrev   string     `json:"abbrev"`
 	Name     string     `json:"name"`
 	Chapters [][]string `json:"chapters"`
 }
 
 func main() {
+	cwd, _ := os.Getwd()
+	fmt.Printf("Current working directory: %s\n", cwd)
+
 	jsonURL := os.Getenv("BIBLE_JSON_URL")
 	versionName := os.Getenv("BIBLE_VERSION")
 	versionLang := os.Getenv("BIBLE_LANG")
+	dbPath := os.Getenv("DB_PATH")
+	fmt.Printf("DB_PATH: %s\n", dbPath)
 
 	if jsonURL == "" {
 		jsonURL = "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/en_kjv.json"
@@ -34,34 +39,41 @@ func main() {
 		versionLang = "en"
 	}
 
-	fmt.Printf("Downloading %s Bible from %s...\n", versionName, jsonURL)
-	resp, err := http.Get(jsonURL)
-	if err != nil {
-		log.Fatalf("Error downloading JSON: %v", err)
-	}
-	defer resp.Body.Close()
+	var body []byte
+	var err error
+	if _, err = os.Stat(jsonURL); err == nil {
+		fmt.Printf("Reading local file %s...\n", jsonURL)
+		body, err = os.ReadFile(jsonURL)
+		if err != nil {
+			log.Fatalf("Error reading local file: %v", err)
+		}
+	} else {
+		fmt.Printf("Downloading %s Bible from %s...\n", versionName, jsonURL)
+		var resp *http.Response
+		resp, err = http.Get(jsonURL)
+		if err != nil {
+			log.Fatalf("Error downloading JSON: %v", err)
+		}
+		defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Error reading response: %v", err)
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("Error reading response: %v", err)
+		}
 	}
 
 	body = bytes.TrimPrefix(body, []byte("\xef\xbb\xbf")) // Remove UTF-8 BOM if present
 
-	var books []Book
+	var books []BibleBook
 	err = json.Unmarshal(body, &books)
 	if err != nil {
-		log.Fatalf("Error parsing JSON: %v", err)
+		log.Fatalf("Error parsing JSON at unmarshal: %v", err)
 	}
 
 	fmt.Printf("Found %d books. Connecting to database...\n", len(books))
 
-	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "db/biblia.db"
-		if _, err := os.Stat("db"); os.IsNotExist(err) {
-			dbPath = "../../db/biblia.db"
-		}
 	}
 
 	db, err := sql.Open("sqlite", dbPath)
@@ -70,7 +82,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// Inserir Versão (ignora se já existir)
 	var versionId int64
 	err = db.QueryRow(`SELECT id FROM "Version" WHERE name = ?`, versionName).Scan(&versionId)
 	if err == sql.ErrNoRows {
@@ -131,5 +142,5 @@ func main() {
 		log.Fatalf("Error committing transaction: %v", err)
 	}
 
-	fmt.Printf("\n✅ Data imported successfully into %s using Prisma schema!\n", dbPath)
+	fmt.Printf("\n✅ Data imported successfully into %s!\n", dbPath)
 }

@@ -14,5 +14,5 @@ services:
 
     # Se você quiser que o container utilize e atualize o mesmo banco
     # de dados da sua pasta local (em vez de fazer uma cópia fixa), descomente as linhas abaixo:
-    # volumes:
-    #   - ./db:/app/db
+    volumes:
+      - ./db:/app/db

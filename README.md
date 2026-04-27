@@ -1,17 +1,18 @@
-# MyBible PWA (KJV Edition)
+# MinhaBiblia PWA (Multi-Versões)
 
-A fast, modern, and offline-first progressive web app (PWA) for reading the Holy Bible (King James Version).
+Uma aplicação progressiva (PWA) rápida, moderna e focada no uso offline para leitura da Bíblia Sagrada (NVI, NVT, KJV).
 
-![MyBible Screenshot](https://raw.githubusercontent.com/mppata-glitch/MinhaBiblia/master/static/favicon.svg)
+![MinhaBiblia Screenshot](https://raw.githubusercontent.com/mppata-glitch/MinhaBiblia/master/static/favicon.svg)
 
-## 🚀 Features
+## 🚀 Funcionalidades
 
-- **Offline Access**: Works without internet through Service Workers.
-- **Advanced Search**: Fast searching by books and verses.
-- **Continuous Reading**: Infinite scroll for smooth transitions between chapters.
-- **Dark Mode**: Adaptive interface with dark/light theme support.
-- **Modern Design**: Built with Tailwind CSS v4 for maximum visual performance.
-- **Analytics**: Google Analytics integration via URL Query Parameters for precise statistics.
+- **Múltiplas Versões**: Suporte para NVI (Nova Versão Internacional), NVT (Nova Versão Transformadora) e KJV (King James Version).
+- **Acesso Offline**: Funciona sem internet através de Service Workers.
+- **Busca Avançada**: Pesquisa rápida por livros e versículos com suporte a termos fonéticos.
+- **Leitura Contínua**: Scroll infinito para transições suaves entre capítulos.
+- **Modo Escuro**: Interface adaptativa com suporte a temas dark/light.
+- **Design Moderno**: Construído com Tailwind CSS v4 para máximo desempenho visual.
+- **Analytics**: Integração com Google Analytics para estatísticas de uso.
 
 ## 🛠️ Technologies
 

@@ -2,7 +2,7 @@ const app = {
     state: {
         books: [],
         versions: [],
-        currentVersion: localStorage.bibleVersion || 'KJV',
+        currentVersion: localStorage.bibleVersion || 'NVI',
         currentBook: null,
         currentChapter: 1,
     },

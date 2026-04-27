@@ -1,7 +1,7 @@
 {
-  "name": "NVI Sagrada",
-  "short_name": "Bíblia NVI",
-  "description": "A Bíblia Sagrada em versão NVI, rápida e acessível offline.",
+  "name": "MinhaBiblia",
+  "short_name": "MinhaBiblia",
+  "description": "Bíblia Sagrada Multi-versões (NVI, NVT, KJV) rápida e acessível offline.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
