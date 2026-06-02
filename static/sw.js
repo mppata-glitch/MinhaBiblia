@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minhabiblia-v1.1.2';
+const CACHE_NAME = 'minhabiblia-cache-v1.2.2';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -43,11 +43,16 @@ self.addEventListener('fetch', (event) => {
             const cachedResponse = await cache.match(event.request);
             
             const networkFetch = fetch(event.request).then((networkResponse) => {
-                // Atualiza o cache com a resposta mais recente
-                cache.put(event.request, networkResponse.clone());
+                // Atualiza o cache apenas se a resposta for bem-sucedida (status 200-299)
+                if (networkResponse.ok) {
+                    cache.put(event.request, networkResponse.clone());
+                }
                 return networkResponse;
-            }).catch(() => {
-                // Se falhar a rede, não fazemos nada pois vamos retornar o cachedResponse (modo offline)
+            }).catch((err) => {
+                // Se falhar a rede e não houver cache, propaga o erro para o frontend tratar
+                if (!cachedResponse) {
+                    throw err;
+                }
             });
 
             return cachedResponse || networkFetch;

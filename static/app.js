@@ -110,9 +110,9 @@ const app = {
         if (view === 'highlights') {
             this.showHighlightsPage(false);
         } else if (book && chapter) {
-            const b = this.state.books.find(x => x.abbrev === book);
+            const b = this.state.books.find(x => x.abbrev.toLowerCase() === book.toLowerCase());
             if (b) {
-                this.loadBook(book, b.name, parseInt(chapter), false);
+                this.loadBook(b.abbrev, b.name, parseInt(chapter), false);
             } else {
                 this.renderHome();
             }
@@ -140,8 +140,8 @@ const app = {
             if (viewParam === 'highlights') {
                 this.showHighlightsPage(false);
             } else if (b && c) {
-                const bookObj = this.state.books.find(x => x.abbrev === b);
-                if (bookObj) this.loadBook(b, bookObj.name, parseInt(c), false);
+                const bookObj = this.state.books.find(x => x.abbrev.toLowerCase() === b.toLowerCase());
+                if (bookObj) this.loadBook(bookObj.abbrev, bookObj.name, parseInt(c), false);
             } else if (s) {
                 document.getElementById('search-input').value = s;
                 this.performSearch(s, false);

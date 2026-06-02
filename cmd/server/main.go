@@ -255,7 +255,7 @@ func getChapter(w http.ResponseWriter, r *http.Request) {
 		SELECT v.id, v.bookId, v.chapter, v.verse, v.text 
 		FROM "Verse" v
 		JOIN "Book" b ON b.id = v.bookId
-		WHERE b.abbrev = ? AND v.chapter = ? AND b.versionId = ?
+		WHERE b.abbrev LIKE ? AND v.chapter = ? AND b.versionId = ?
 		ORDER BY v.verse
 	`, abbrev, chapter, versionID)
 	if err != nil {
