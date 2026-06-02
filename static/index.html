@@ -3,16 +3,56 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MinhaBíblia - Sua Bíblia Offline</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#020617"> <!-- slate-950 -->
     <meta name="description" content="Bíblia Sagrada Multi-versões (NVI, NVT, KJV) offline e rápida.">
 
+    <!-- Script de Auto-recuperação de Cache (PWA) -->
+    <script>
+        const APP_VERSION = '1.2.2';
+        if (localStorage.appVersion !== APP_VERSION) {
+            console.log('Nova versão detectada (' + APP_VERSION + '). Limpando cache e Service Workers antigos...');
+            const cleanTasks = [];
+            if ('caches' in window) {
+                cleanTasks.push(
+                    caches.keys().then(names => {
+                        return Promise.all(names.map(name => {
+                            console.log('Deletando cache antigo:', name);
+                            return caches.delete(name);
+                        }));
+                    })
+                );
+            }
+            if ('serviceWorker' in navigator) {
+                cleanTasks.push(
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        return Promise.all(registrations.map(reg => {
+                            console.log('Desregistrando Service Worker antigo:', reg.scope);
+                            return reg.unregister();
+                        }));
+                    })
+                );
+            }
+            Promise.all(cleanTasks).then(() => {
+                console.log('Limpeza de cache concluída com sucesso. Recarregando...');
+                localStorage.appVersion = APP_VERSION;
+                window.location.reload();
+            }).catch(err => {
+                console.error('Erro na limpeza de caches/SW:', err);
+                setTimeout(() => {
+                    localStorage.appVersion = APP_VERSION;
+                    window.location.reload();
+                }, 500);
+            });
+        }
+    </script>
+
     <!-- Tailwind CSS (via CDN for simplicity, can be built later) -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/favicon.svg">
-    <link rel="stylesheet" href="/output.css?v=1.1.2">
+    <link rel="stylesheet" href="/output.css?v=1.2.2">
 
     <style>
         :root {
@@ -119,7 +159,8 @@
 
             <div class="flex items-center gap-2 flex-1 justify-end">
                 <!-- Search Bar -->
-                <div class="relative w-full max-w-[320px] group">
+                <div
+                    class="relative w-full max-w-[160px] sm:max-w-[320px] transition-all duration-300 focus-within:max-w-[400px] focus-within:flex-1 group">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                         <svg class="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors"
                             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -128,8 +169,18 @@
                             <path d="m21 21-4.3-4.3" />
                         </svg>
                     </div>
-                    <input type="text" id="search-input" placeholder="Search book or verse..."
-                        class="w-full bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-400 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 rounded-2xl pl-12 pr-4 py-2 text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-800 dark:text-slate-200 placeholder-slate-400">
+                    <input type="text" id="search-input" placeholder="Search..." autocomplete="off" autocorrect="off"
+                        autocapitalize="off" spellcheck="false" onfocus="this.select()"
+                        class="w-full bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-400 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-800 rounded-2xl pl-12 pr-10 py-2 text-base focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all text-slate-800 dark:text-slate-200 placeholder-slate-400">
+                    <button id="search-clear" onclick="app.clearSearch()"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="m15 9-6 6" />
+                            <path d="m9 9 6 6" />
+                        </svg>
+                    </button>
                 </div>
 
                 <div class="flex items-center shrink-0 border-l border-slate-200 dark:border-slate-800 pl-2 ml-2 gap-1">
@@ -140,12 +191,12 @@
                             <!-- Versions will be loaded here -->
                         </select>
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-0.5">
                         <button onclick="app.changeFontSize(-1)"
-                            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-sm text-slate-500 hover:text-indigo-600"
+                            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-sm text-slate-500 hover:text-indigo-600 active:scale-90"
                             title="Decrease Font">A-</button>
                         <button onclick="app.changeFontSize(1)"
-                            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-lg text-slate-500 hover:text-indigo-600"
+                            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-serif font-bold text-lg text-slate-500 hover:text-indigo-600 active:scale-90"
                             title="Increase Font">A+</button>
                     </div>
                     <button onclick="app.toggleTheme()" id="theme-toggle"
@@ -171,7 +222,8 @@
         class="w-full py-6 mt-auto text-center text-sm text-slate-500 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
         <div class="container mx-auto px-4">
             <div class="mb-4">
-                <p class="text-slate-600 dark:text-slate-400 mb-2 italic">Gostou do projeto e quer ajudar com os custos?
+                <p id="footer-donation-text" class="text-slate-600 dark:text-slate-400 mb-2 italic">Gostou do projeto e
+                    quer ajudar com os custos?
                 </p>
                 <a href="https://nubank.com.br/cobrar/38y8q/69ef5c65-a3f0-49a6-86b6-02a2893ddff5" target="_blank"
                     rel="noopener noreferrer"
@@ -180,11 +232,11 @@
                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                     </svg>
-                    Apoiar via PIX
+                    <span id="footer-donation-button-text">Apoiar via PIX</span>
                 </a>
             </div>
             <div class="pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                Todos os direitos reservados mpp.app.br | v1.1.2
+                Todos os direitos reservados mpp.app.br | v1.2.2
             </div>
         </div>
     </footer>
@@ -196,7 +248,7 @@
     <aside id="sidebar"
         class="fixed inset-y-0 left-0 z-[60] w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform -translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
         <div class="h-14 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800">
-            <span class="font-bold text-lg">Table of Contents</span>
+            <span id="sidebar-toc-title" class="font-bold text-lg">Table of Contents</span>
             <button onclick="app.toggleSidebar()"
                 class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
@@ -211,11 +263,11 @@
         </div>
     </aside>
 
-    <script src="/app.js?v=1.1.2"></script>
+    <script src="/app-v1.2.2.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js?v=1.1.2')
+                navigator.serviceWorker.register('/sw-v1.2.2.js')
                     .then(reg => console.log('Service Worker registrado!', reg))
                     .catch(err => console.log('Falha no registro do Service Worker:', err));
             });
