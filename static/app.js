@@ -703,10 +703,14 @@ const app = {
         try {
             const res = await fetch(`/api/highlights?v=${this.state.currentVersion}`);
             if (res.ok) {
-                this.state.highlights = await res.json();
+                const data = await res.json();
+                this.state.highlights = Array.isArray(data) ? data : [];
+            } else {
+                this.state.highlights = [];
             }
         } catch (e) {
             console.error("Erro ao carregar grifos", e);
+            this.state.highlights = [];
         }
     },
 

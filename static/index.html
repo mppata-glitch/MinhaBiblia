@@ -11,7 +11,7 @@
 
     <!-- Script de Auto-recuperação de Cache (PWA) -->
     <script>
-        const APP_VERSION = '1.2.2';
+        const APP_VERSION = '1.2.3';
         if (localStorage.appVersion !== APP_VERSION) {
             console.log('Nova versão detectada (' + APP_VERSION + '). Limpando cache e Service Workers antigos...');
             const cleanTasks = [];
@@ -52,7 +52,7 @@
     <!-- Tailwind CSS (via CDN for simplicity, can be built later) -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="apple-touch-icon" href="/favicon.svg">
-    <link rel="stylesheet" href="/output.css?v=1.2.2">
+    <link rel="stylesheet" href="/output.css?v=1.2.3">
 
     <style>
         :root {
@@ -263,11 +263,11 @@
         </div>
     </aside>
 
-    <script src="/app-v1.2.2.js"></script>
+    <script src="/app-v1.2.3.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw-v1.2.2.js')
+                navigator.serviceWorker.register('/sw-v1.2.3.js')
                     .then(reg => console.log('Service Worker registrado!', reg))
                     .catch(err => console.log('Falha no registro do Service Worker:', err));
             });
