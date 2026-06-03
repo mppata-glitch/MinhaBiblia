@@ -701,7 +701,7 @@ const app = {
 
     async loadHighlights() {
         try {
-            const res = await fetch(`/api/highlights?v=${this.state.currentVersion}`);
+            const res = await fetch(`/api/highlights`);
             if (res.ok) {
                 const data = await res.json();
                 this.state.highlights = Array.isArray(data) ? data : [];

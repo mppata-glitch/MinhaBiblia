@@ -363,24 +363,11 @@ type Highlight struct {
 }
 
 func getHighlights(w http.ResponseWriter, r *http.Request) {
-	versionName := r.URL.Query().Get("v")
-	var rows *sql.Rows
-	var err error
-
-	if versionName != "" {
-		rows, err = db.Query(`
-			SELECT id, bookAbbrev, bookName, chapter, verse, text, versionName
-			FROM "Highlight"
-			WHERE versionName = ?
-			ORDER BY id DESC
-		`, versionName)
-	} else {
-		rows, err = db.Query(`
-			SELECT id, bookAbbrev, bookName, chapter, verse, text, versionName
-			FROM "Highlight"
-			ORDER BY id DESC
-		`)
-	}
+	rows, err := db.Query(`
+		SELECT id, bookAbbrev, bookName, chapter, verse, text, versionName
+		FROM "Highlight"
+		ORDER BY id DESC
+	`)
 
 	if err != nil {
 		log.Printf("ERRO em getHighlights: %v", err)

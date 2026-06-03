@@ -260,7 +260,7 @@ func TestHighlights(t *testing.T) {
 	}
 
 	// 3. Testa listagem GET
-	reqGet, err := http.NewRequest("GET", "/api/highlights?v=NVI", nil)
+	reqGet, err := http.NewRequest("GET", "/api/highlights", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
