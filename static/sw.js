@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minhabiblia-cache-v1.2.4';
+const CACHE_NAME = 'minhabiblia-cache-v1.2.9';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',

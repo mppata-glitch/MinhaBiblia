@@ -10,6 +10,7 @@ const app = {
     observer: null,
     loadingNext: false,
     searchTimeout: null,
+    mobileSearchTimeout: null,
     i18n: {
         'pt-br': {
             searchPlaceholder: "Pesquisar livro ou versículo...",
@@ -67,6 +68,10 @@ const app = {
 
     updateUIStrings() {
         document.getElementById('search-input').placeholder = this.t('searchPlaceholder');
+        const mobileSearchInput = document.getElementById('mobile-search-input');
+        if (mobileSearchInput) {
+            mobileSearchInput.placeholder = this.t('searchPlaceholder');
+        }
         document.getElementById('sidebar-toc-title').textContent = this.t('toc');
         document.getElementById('footer-donation-text').textContent = this.t('donationTitle');
         document.getElementById('footer-donation-button-text').textContent = this.t('donationButton');
@@ -117,7 +122,7 @@ const app = {
                 this.renderHome();
             }
         } else if (search) {
-            document.getElementById('search-input').value = search;
+            this.setSearchInputs(search);
             this.performSearch(search, false);
         } else {
             this.renderHome();
@@ -143,7 +148,7 @@ const app = {
                 const bookObj = this.state.books.find(x => x.abbrev.toLowerCase() === b.toLowerCase());
                 if (bookObj) this.loadBook(bookObj.abbrev, bookObj.name, parseInt(c), false);
             } else if (s) {
-                document.getElementById('search-input').value = s;
+                this.setSearchInputs(s);
                 this.performSearch(s, false);
             } else {
                 this.showHome(false);
@@ -345,6 +350,82 @@ const app = {
         container.innerHTML = html;
     },
 
+    setSearchInputs(value) {
+        const searchValue = value || '';
+        const desktopInput = document.getElementById('search-input');
+        const mobileInput = document.getElementById('mobile-search-input');
+        const clearBtn = document.getElementById('search-clear');
+
+        if (desktopInput) desktopInput.value = searchValue;
+        if (mobileInput) mobileInput.value = searchValue;
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', searchValue.length === 0);
+        }
+    },
+
+    openMobileSearch() {
+        const overlay = document.getElementById('mobile-search-overlay');
+        const input = document.getElementById('mobile-search-input');
+        const desktopInput = document.getElementById('search-input');
+
+        if (!overlay || !input) return;
+
+        if (desktopInput && desktopInput.value) {
+            input.value = desktopInput.value;
+        }
+
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            input.focus();
+            input.select();
+        }, 50);
+    },
+
+    closeMobileSearch() {
+        const overlay = document.getElementById('mobile-search-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        clearTimeout(this.mobileSearchTimeout);
+    },
+
+    handleMobileSearchInput() {
+        clearTimeout(this.mobileSearchTimeout);
+        const input = document.getElementById('mobile-search-input');
+        if (!input) return;
+
+        const q = input.value.trim();
+        this.setSearchInputs(input.value);
+
+        if (q.length === 0) {
+            this.showHome();
+            return;
+        }
+
+        if (q.length < 2) return;
+
+        this.mobileSearchTimeout = setTimeout(() => {
+            this.submitMobileSearch();
+        }, 400);
+    },
+
+    submitMobileSearch() {
+        clearTimeout(this.mobileSearchTimeout);
+        const input = document.getElementById('mobile-search-input');
+        if (!input) return;
+
+        const q = input.value.trim();
+        if (q.length === 0) {
+            this.closeMobileSearch();
+            this.showHome();
+            return;
+        }
+
+        if (q.length < 2) return;
+
+        this.setSearchInputs(q);
+        this.performSearch(q);
+        this.closeMobileSearch();
+    },
+
     showHome(updateUrl = true) {
         if (updateUrl) {
             history.pushState(null, '', `/?v=${this.state.currentVersion}`);
@@ -352,19 +433,26 @@ const app = {
         this.disconnectObserver();
         this.state.currentBook = null;
         this.renderHome();
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            searchInput.value = '';
-            document.getElementById('search-clear').classList.add('hidden');
-        }
+        this.setSearchInputs('');
     },
 
     clearSearch() {
+        this.setSearchInputs('');
         const input = document.getElementById('search-input');
-        input.value = '';
-        input.focus();
-        document.getElementById('search-clear').classList.add('hidden');
+        if (input) input.focus();
         this.showHome();
+    },
+
+    triggerSearch() {
+        const input = document.getElementById('search-input');
+        if (input) {
+            const q = input.value.trim();
+            if (q.length >= 2) {
+                this.setSearchInputs(q);
+                this.performSearch(q);
+                input.blur();
+            }
+        }
     },
 
     toggleHomeBook(abbrev) {
@@ -534,7 +622,7 @@ const app = {
                 <p id="v-${b.abbrev}-${c}-${v.verse}" 
                    onclick="app.handleVerseClick('${b.abbrev}', '${b.name.replace(/'/g, "\\'")}', ${c}, ${v.verse}, '${v.text.replace(/'/g, "\\'")}')" 
                    title="${this.t('highlightTooltip')}"
-                   class="hover:bg-slate-100 dark:hover:bg-slate-850/50 p-2 rounded transition-colors group cursor-pointer relative ${hlClass}">
+                   class="hover:bg-slate-100 dark:hover:bg-slate-800/50 p-2 rounded transition-colors group cursor-pointer relative ${hlClass}">
                     <sup class="text-indigo-500 dark:text-indigo-400 font-sans font-bold mr-1 text-xs opacity-70 group-hover:opacity-100">${v.verse}</sup>
                     <span>${v.text}</span>
                 </p>
@@ -597,8 +685,13 @@ const app = {
         
         if (q.trim().length < 2) return;
 
+        const isMobile = window.innerWidth < 640 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
+            return;
+        }
+
         this.searchTimeout = setTimeout(() => {
-            this.performSearch(q.trim());
+            this.performSearch(q.trim(), false);
         }, 400);
     },
 
@@ -612,6 +705,16 @@ const app = {
             return;
         }
 
+        const input = document.getElementById('search-input');
+        let selectionStart = 0;
+        let selectionEnd = 0;
+        let isFocused = false;
+        if (input) {
+            selectionStart = input.selectionStart;
+            selectionEnd = input.selectionEnd;
+            isFocused = (document.activeElement === input);
+        }
+
         if (updateUrl) {
             const newUrl = `?v=${this.state.currentVersion}&search=${encodeURIComponent(query)}`;
             if (window.location.search.includes('search=')) {
@@ -619,6 +722,12 @@ const app = {
             } else {
                 history.pushState(null, '', newUrl);
             }
+        }
+
+        if (input && isFocused) {
+            setTimeout(() => {
+                input.setSelectionRange(selectionStart, selectionEnd);
+            }, 0);
         }
 
         this.disconnectObserver();
@@ -740,6 +849,7 @@ const app = {
                     if (el) {
                         el.className = el.className.replace(/bg-yellow-200\/80|dark:bg-yellow-900\/40|border-l-4|border-yellow-500|pl-2/g, '').trim();
                     }
+                    this.invalidateHighlightsCache();
                 }
             } catch (e) {
                 console.error("Erro ao remover grifo", e);
@@ -771,10 +881,23 @@ const app = {
                     if (el) {
                         el.classList.add('bg-yellow-200/80', 'dark:bg-yellow-900/40', 'border-l-4', 'border-yellow-500', 'pl-2');
                     }
+                    this.invalidateHighlightsCache();
                 }
             } catch (e) {
                 console.error("Erro ao adicionar grifo", e);
             }
+        }
+    },
+
+    invalidateHighlightsCache() {
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    caches.open(name).then(cache => {
+                        cache.delete('/api/highlights');
+                    });
+                });
+            });
         }
     },
 
@@ -855,9 +978,29 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     searchInput.addEventListener('focus', function() {
+        const originalVal = this.value;
         setTimeout(() => {
-            this.setSelectionRange(0, this.value.length);
+            if (this.value === originalVal) {
+                this.setSelectionRange(0, this.value.length);
+            }
         }, 50);
     });
+
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    if (mobileSearchInput) {
+        mobileSearchInput.addEventListener('input', function() {
+            app.handleMobileSearchInput();
+        });
+
+        mobileSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                app.submitMobileSearch();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                app.closeMobileSearch();
+            }
+        });
+    }
 });
 
